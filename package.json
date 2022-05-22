@@ -1,0 +1,20 @@
+{
+  "name": "cowboy-and-bulldog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "browsersync": "npx browser-sync start --server 'build' --port 5000 --files 'build'",
+    "watch": "npx tsc --watch",
+    "dev": "run-p watch browsersync"
+  },
+  "author": "nobelou",
+  "license": "ISC",
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "browser-sync": "^2.27.10"
+  }
+}
