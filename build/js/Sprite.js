@@ -2,14 +2,12 @@ export class Sprite {
     image;
     source;
     size;
-    padding = { x: 0, y: 0 };
-    constructor({ source, size, padding }) {
+    offset;
+    constructor({ source, size, offset }) {
         this.image = new Image();
         this.size = size;
         this.source = source;
-        if (padding) {
-            this.padding = padding;
-        }
+        this.offset = offset;
     }
     load() {
         this.image.src = this.source;
@@ -19,13 +17,15 @@ export class Sprite {
             };
         });
     }
-    draw(frame, ctx, x, y, flipX, flipY) {
+    draw(frame, ctx, x, y, flipX, flipY, center = true) {
         ctx.save();
-        const width = this.size - (this.padding.x * 2);
-        const height = this.size - (this.padding.y * 2);
-        ctx.translate(x, y);
+        const offsetX = x - this.offset.x;
+        const offsetY = y - this.offset.y;
+        const width = this.size;
+        const height = this.size;
+        ctx.translate(offsetX, offsetY);
         ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-        ctx.drawImage(this.image, this.size * frame + this.padding.x, this.padding.y, width, height, flipX ? -width : 0, 0, width, height);
+        ctx.drawImage(this.image, this.size * frame, 0, width, height, flipX ? -width : 0, 0, width, height);
         ctx.restore();
     }
 }

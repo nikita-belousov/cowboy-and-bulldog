@@ -1,4 +1,6 @@
+import {Audio} from "./Audio.js";
 import { Controller } from "./Controller.js";
+import {Dead} from "./Dead.js";
 import { EventBus } from "./EventBus.js";
 import {GlobalState} from "./GlobalState.js";
 import { Player } from "./Player.js";
@@ -18,18 +20,22 @@ enum ContextType {
 
 enum SpriteType {
     cowboy = 'cowboy',
+    dead = 'dead',
+    bullet = 'bullet',
 }
 
 export class Game {
     screenWidth: number;
     screenHeight: number;
     timer: ITimer = { value: 0 };
+    sprites!: Record<SpriteType, Sprite>;
 
     private ctx!: Record<ContextType, CanvasRenderingContext2D>;
-    private sprites!: Record<SpriteType, Sprite>;
     private controller!: Controller;
     private eventBus!: EventBus;
+    private audio!: Audio;
     private player!: Player;
+    private enemies: Dead[] = [];
     private globalState!: GlobalState;
 
     constructor({ screenWidth, screenHeight }: IGameConstructorParams) {
@@ -42,9 +48,12 @@ export class Game {
         
         this.initGlobalState();
         this.initCtxs();
-        this.initPlayer();
         this.initEventBus();
         this.initController();
+        this.initAudio();
+
+        this.initPlayer();
+        this.spawnEnemies();
 
         this.eventBus.subscribe(this.player, [EventType.keydown, EventType.keyup]);
         this.eventBus.subscribe(this.globalState, [EventType.keydown, EventType.keyup]);
@@ -81,12 +90,26 @@ export class Game {
         const cowboySprite = new Sprite({
             source: './sprites/cowboy.png',
             size: 100,
-            // padding: { x: 0, y: 0 },
+            offset: { x: 35, y: 30, width: 30, height: 40 },
+        });
+
+        const bulletSprite = new Sprite({
+            source: './sprites/bullet.png',
+            size: 20,
+            offset: { x: 8, y: 8, width: 8, height: 4 },
+        });
+
+        const deadSprite = new Sprite({
+            source: './sprites/dead.png',
+            size: 100,
+            offset: { x: 40, y: 30, width: 30, height: 40 },
         });
 
         this.sprites = { 
             ...(this.sprites || {}),
             [SpriteType.cowboy]: cowboySprite,
+            [SpriteType.dead]: deadSprite,
+            [SpriteType.bullet]: bulletSprite,
         };
 
         const loadPromises = Object.values(this.sprites).map(sprite => sprite.load());
@@ -95,11 +118,42 @@ export class Game {
 
     private initPlayer() {
         this.player = new Player({ 
+            game: this,
+            audio: this.audio,
+            globalState: this.globalState,
+            timer: this.timer, sprite: this.sprites[SpriteType.cowboy],
+            position: { x: 100, y: 300 },
+        });
+    }
+
+    private spawnEnemies() {
+        this.enemies.push(new Dead({ 
+            game: this,
+            audio: this.audio,
             globalState: this.globalState,
             timer: this.timer,
-            position: { x: 100, y: 300 },
-            sprite: this.sprites[SpriteType.cowboy],
-        });
+            sprite: this.sprites[SpriteType.dead],
+            position: { x: 600, y: 300 },
+            player: this.player,
+        }));
+
+        // const spawnTime = Math.round(Math.random() * 10000);
+
+        // setTimeout(() => {
+        //     if (!this.globalState.values.isPaused) {
+        //         this.enemies.push(new Dead({ 
+        //             game: this,
+        //             audio: this.audio,
+        //             globalState: this.globalState,
+        //             timer: this.timer,
+        //             sprite: this.sprites[SpriteType.dead],
+        //             position: { x: 600, y: 300 },
+        //             player: this.player,
+        //         }));
+        //     }
+
+        //     this.spawnEnemies();
+        // }, spawnTime);
     }
 
     private initEventBus() {
@@ -110,17 +164,24 @@ export class Game {
         this.controller = new Controller({ eventBus: this.eventBus });
     }
 
+    private initAudio() {
+        this.audio = new Audio();
+    }
+
     private initGlobalState() {
         this.globalState = new GlobalState({ game: this });
     }
 
     private update() {
+        this.enemies.forEach(enemy => enemy.update());
         this.player.update();
         
         this.timer.value++;
     }
 
     private draw() {
+        const { isDebug } = this.globalState.values;
+
         const bgCtx = this.ctx[ContextType.background];
         const fgCtx = this.ctx[ContextType.foreground];
         const uiCtx = this.ctx[ContextType.ui];
@@ -129,19 +190,51 @@ export class Game {
         bgCtx.clearRect(0, 0, this.screenWidth, this.screenHeight);
         uiCtx.clearRect(0, 0, this.screenWidth, this.screenHeight);
 
-        bgCtx.fillStyle = 'rgb(255, 255, 255)'; 
+        bgCtx.fillStyle = 'rgb(160, 160, 160)'; 
         bgCtx.fillRect(0, 0, this.screenWidth, this.screenHeight);
 
+        this.enemies.forEach(enemy => enemy.draw(fgCtx));
         this.player.draw(fgCtx);
 
-        if (this.globalState.values.isDebug) {
+        if (isDebug) {
             this.globalState.draw(uiCtx);
         }
     }
 
+    private drawPauseScreen() {
+        const uiCtx = this.ctx[ContextType.ui];
+
+        const text = 'pause';
+        const fontSize = 20;
+        const charWidth = fontSize / 1.5;
+        const textWidth = text.length * charWidth;
+
+        uiCtx.save();
+
+        uiCtx.clearRect(0, 0, this.screenWidth, this.screenHeight);
+        uiCtx.globalAlpha = 0.4;
+        uiCtx.fillStyle = 'rgb(0, 0, 0)'; 
+        uiCtx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+        uiCtx.globalAlpha = 1;
+        uiCtx.fillStyle = 'rgb(255, 255, 255)';
+        uiCtx.font = `${fontSize}px monospace`;
+        uiCtx.fillText(
+            text,
+            this.screenWidth / 2 - textWidth / 2,
+            this.screenHeight / 2 - fontSize / 2
+        );
+        
+        uiCtx.restore();
+    }
+
     private tick() {
-        this.update();
-        this.draw();
+        if (this.globalState.values.isPaused) {
+            this.drawPauseScreen();
+        } else {
+            this.update();
+            this.draw();
+        }
 
         window.requestAnimationFrame(this.tick.bind(this));
     }

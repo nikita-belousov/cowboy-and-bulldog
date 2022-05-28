@@ -8,11 +8,13 @@ export interface IGlobalStateConstructorParams {
 
 export interface IGlobalStateValues {
     isDebug: boolean;
+    isPaused: boolean;
 }
 
 export class GlobalState extends Base {
     values: IGlobalStateValues = {
         isDebug: false,
+        isPaused: false,
     }
 
     private game!: Game;
@@ -29,31 +31,38 @@ export class GlobalState extends Base {
             case EventType.keydown:
                 if (payload.key === 'd' && payload.ctrlKey) {
                     this.toggleDebug();
+                } else if (payload.key === 'p') {
+                    this.togglePaused();
                 }
                 break;
         }
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        ctx.save();
-        ctx.translate(this.game.screenWidth - this.sidebarWidth, 0);
+        // ctx.save();
+        // ctx.translate(this.game.screenWidth - this.sidebarWidth, 0);
 
-        ctx.globalAlpha = 0.8;
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        ctx.fillRect(0, 0, this.sidebarWidth, this.game.screenHeight);
+        // ctx.globalAlpha = 0.8;
+        // ctx.fillStyle = 'rgb(0, 0, 0)';
+        // ctx.fillRect(0, 0, this.sidebarWidth, this.game.screenHeight);
 
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        ctx.font = '10px monospace';
+        // ctx.globalAlpha = 1;
+        // ctx.fillStyle = 'rgb(255, 255, 255)';
+        // ctx.font = '10px monospace';
 
-        Object.keys(this.values).forEach((key, i) => {
-            const value = this.values[key as keyof IGlobalStateValues];
-            ctx.fillText(`${(key + ':').padEnd(12)} ${value}`, 10, 14 + i * 13);
-        });
+        // Object.keys(this.values).forEach((key, i) => {
+        //     const value = this.values[key as keyof IGlobalStateValues];
+        //     ctx.fillText(`${(key + ':').padEnd(12)} ${value}`, 10, 14 + i * 13);
+        // });
 
-        ctx.restore();
+        // ctx.restore();
     }
 
     private toggleDebug() {
         this.values.isDebug = !this.values.isDebug;
+    }
+
+    private togglePaused() {
+        this.values.isPaused = !this.values.isPaused;
     }
 }

@@ -3,7 +3,7 @@ export interface IPosition {
     y: number;
 }
 
-export interface ICollisionRect {
+export interface IRect {
     x: number;
     y: number;
     width: number;
@@ -17,6 +17,11 @@ export interface ITimer {
 export enum EventType {
     keydown = 'keydown',
     keyup = 'keyup',
+}
+
+export enum Direction {
+    left = 'left',
+    right = 'right',
 }
 
 export type IKeyboardEventPayload = Pick<KeyboardEvent, 'key' | 'ctrlKey'>

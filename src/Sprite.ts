@@ -1,23 +1,22 @@
+import { IRect } from "./types";
+
 export interface ISpriteConstructorParams {
     source: string;
     size: number;
-    padding?: { x: number; y: number }
+    offset: IRect;
 }
 
 export class Sprite {
     image!: HTMLImageElement;
     source!: string;
     size!: number;
-    padding: { x: number; y: number } = { x: 0, y: 0 };
+    offset!: IRect;
 
-    constructor({ source, size, padding }: ISpriteConstructorParams) {
+    constructor({ source, size, offset }: ISpriteConstructorParams) {
         this.image = new Image();
         this.size = size;
         this.source = source;
-
-        if (padding) {
-            this.padding = padding;
-        }
+        this.offset = offset;
     }
 
     load(): Promise<void> {
@@ -30,18 +29,20 @@ export class Sprite {
         });
     }
 
-    draw(frame: number, ctx: CanvasRenderingContext2D, x: number, y: number, flipX?: boolean, flipY?: boolean) {
+    draw(frame: number, ctx: CanvasRenderingContext2D, x: number, y: number, flipX?: boolean, flipY?: boolean, center = true) {
         ctx.save();
 
-        const width = this.size - (this.padding.x * 2);
-        const height = this.size - (this.padding.y * 2);
+        const offsetX = x - this.offset.x;
+        const offsetY = y - this.offset.y;
+        const width = this.size;
+        const height = this.size;
 
-        ctx.translate(x, y);
+        ctx.translate(offsetX, offsetY);
         ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
         ctx.drawImage(
             this.image,
-            this.size * frame + this.padding.x,
-            this.padding.y,
+            this.size * frame,
+            0,
             width,
             height,
             flipX ? -width : 0,
